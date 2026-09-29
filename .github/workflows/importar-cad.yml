@@ -1,0 +1,33 @@
+name: Importar proyecto CAD
+on:
+  push:
+    branches: [codex/preparar-cad-web]
+permissions:
+  contents: write
+jobs:
+  importar:
+    if: github.event.head_commit.message == 'Preparar importación completa del CAD'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruir y comprobar paquete
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .bootstrap/chunks/* > /tmp/cadweb-bootstrap.tar.xz
+          echo "84fba2d764d88d7f7dde4c6392a9457bc0394b80a396a34e6b69e778deaa6d72  /tmp/cadweb-bootstrap.tar.xz" | sha256sum -c -
+      - name: Publicar archivos editables en la rama
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf .bootstrap
+          rm -f .github/workflows/importar-cad.yml
+          tar -xJf /tmp/cadweb-bootstrap.tar.xz -C .
+          git add -A
+          git commit -m "Importar proyecto CAD web completo"
+          git push origin HEAD:codex/preparar-cad-web
